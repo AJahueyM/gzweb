@@ -2,7 +2,10 @@
 build
 gz3d/build
 build_*
+**/.idea
+.idea
 
+.idea_*
 # Just Mac Things
 .DS_Store
 

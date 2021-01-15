@@ -20,7 +20,6 @@
 
 #include "GazeboInterface.hh"
 #include "OgreMaterialParser.hh"
-
 using namespace v8;
 using namespace gzweb;
 
@@ -47,12 +46,12 @@ GZNode::~GZNode()
 };
 
 /////////////////////////////////////////////////
-void GZNode::Init(Handle<Object> exports)
+void GZNode::Init(Local<Object> exports)
 {
   Isolate* isolate = exports->GetIsolate();
   // Prepare constructor template
   Local<FunctionTemplate> tpl = FunctionTemplate::New(isolate, New);
-  tpl->SetClassName(String::NewFromUtf8(isolate, "GZNode"));
+  tpl->SetClassName(String::NewFromUtf8(isolate, "GZNode").ToLocalChecked());
   tpl->InstanceTemplate()->SetInternalFieldCount(1);
   // Prototype
   NODE_SET_PROTOTYPE_METHOD(tpl, "loadMaterialScripts", LoadMaterialScripts);
@@ -80,8 +79,10 @@ void GZNode::Init(Handle<Object> exports)
   NODE_SET_PROTOTYPE_METHOD(tpl, "getMaterialScriptsMessage",
       GetMaterialScriptsMessage);
 
-  exports->Set(String::NewFromUtf8(isolate, "GZNode"),
-               tpl->GetFunction());
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+  exports->Set(context,String::NewFromUtf8(isolate, "GZNode").ToLocalChecked(),
+               tpl->GetFunction(context).ToLocalChecked());
 }
 
 /////////////////////////////////////////////////
@@ -103,20 +104,20 @@ void GZNode::LoadMaterialScripts(const FunctionCallbackInfo<Value>& args)
   if (args.Length() < 1)
   {
     isolate->ThrowException(Exception::TypeError(
-        String::NewFromUtf8(isolate, "Wrong number of arguments")));
+        String::NewFromUtf8(isolate, "Wrong number of arguments").ToLocalChecked()));
     return;
   }
 
   if (!args[0]->IsString())
   {
     isolate->ThrowException(Exception::TypeError(
-        String::NewFromUtf8(isolate, "Wrong argument type. String expected.")));
+        String::NewFromUtf8(isolate, "Wrong argument type. String expected.").ToLocalChecked()));
     return;
   }
 
   GZNode* obj = ObjectWrap::Unwrap<GZNode>(args.This());
 
-  String::Utf8Value path(args[0]->ToString());
+  String::Utf8Value path(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
   obj->gzIface->LoadMaterialScripts(std::string(*path));
 
   return;
@@ -125,8 +126,10 @@ void GZNode::LoadMaterialScripts(const FunctionCallbackInfo<Value>& args)
 /////////////////////////////////////////////////
 void GZNode::SetConnected(const FunctionCallbackInfo<Value>& args)
 {
-  GZNode *obj = ObjectWrap::Unwrap<GZNode>(args.This());
-  bool value = args[0]->BooleanValue();
+    Isolate* isolate = args.GetIsolate();
+
+    GZNode *obj = ObjectWrap::Unwrap<GZNode>(args.This());
+  bool value = args[0]->BooleanValue(isolate);
   obj->gzIface->SetConnected(value);
 
   return;
@@ -149,18 +152,18 @@ void GZNode::GetMaterialScriptsMessage(const FunctionCallbackInfo<Value>& args)
   if (args.Length() < 1)
   {
     isolate->ThrowException(Exception::TypeError(
-        String::NewFromUtf8(isolate, "Wrong number of arguments")));
+        String::NewFromUtf8(isolate, "Wrong number of arguments").ToLocalChecked()));
     return;
   }
 
   if (!args[0]->IsString())
   {
     isolate->ThrowException(Exception::TypeError(
-        String::NewFromUtf8(isolate, "Wrong argument type. String expected.")));
+        String::NewFromUtf8(isolate, "Wrong argument type. String expected.").ToLocalChecked()));
     return;
   }
 
-  String::Utf8Value path(args[0]->ToString());
+  String::Utf8Value path(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
 
   OgreMaterialParser materialParser;
   materialParser.Load(std::string(*path));
@@ -171,7 +174,7 @@ void GZNode::GetMaterialScriptsMessage(const FunctionCallbackInfo<Value>& args)
   msg += materialJson;
   msg += "}";
 
-  args.GetReturnValue().Set(String::NewFromUtf8(isolate ,msg.c_str()));
+  args.GetReturnValue().Set(String::NewFromUtf8(isolate ,msg.c_str()).ToLocalChecked());
 }
 
 /////////////////////////////////////////////////
@@ -230,7 +233,7 @@ void GZNode::GetMessages(const FunctionCallbackInfo<Value>& args)
   // args.GetReturnValue().Set(Number::New(isolate ,msgs.size()));
   Local<Array> arguments = Array::New(isolate, msgs.size());
   for (unsigned int i = 0; i < msgs.size(); ++i) {
-    arguments->Set(i ,String::NewFromUtf8(isolate, msgs[i].c_str()));
+    arguments->Set(isolate->GetCurrentContext(), i ,String::NewFromUtf8(isolate, msgs[i].c_str()).ToLocalChecked());
   }
 
   args.GetReturnValue().Set(arguments);
@@ -245,20 +248,20 @@ void GZNode::Request(const FunctionCallbackInfo<Value>& args)
   if (args.Length() < 1)
   {
     isolate->ThrowException(Exception::TypeError(
-        String::NewFromUtf8(isolate, "Wrong number of arguments")));
+        String::NewFromUtf8(isolate, "Wrong number of arguments").ToLocalChecked()));
     return;
   }
 
   if (!args[0]->IsString())
   {
     isolate->ThrowException(Exception::TypeError(
-        String::NewFromUtf8(isolate, "Wrong argument type. String expected.")));
+        String::NewFromUtf8(isolate, "Wrong argument type. String expected.").ToLocalChecked()));
     return;
   }
 
   GZNode* obj = ObjectWrap::Unwrap<GZNode>(args.This());
 
-  String::Utf8Value request(args[0]->ToString());
+  String::Utf8Value request(isolate, args[0]->ToString(isolate->GetCurrentContext()).ToLocalChecked());
   obj->gzIface->PushRequest(std::string(*request));
 
   return;
@@ -286,7 +289,7 @@ void GZNode::GetPoseMsgFilterMinimumAge(const
 }
 
 /////////////////////////////////////////////////
-void InitAll(Handle<Object> exports)
+void InitAll(Local<Object> exports)
 {
   GZNode::Init(exports);
 }
