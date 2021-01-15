@@ -12,7 +12,7 @@ GZ3D.GZIface = function(scene, url)
   this.url = url || (location.hostname + ':' + location.port + location.pathname);
   this.protocol = location.protocol;
   this.secure = location.protocol === 'https:';
-  console.log(this.secure)
+  console.log(this.secure);
 
   this.isConnected = false;
 
